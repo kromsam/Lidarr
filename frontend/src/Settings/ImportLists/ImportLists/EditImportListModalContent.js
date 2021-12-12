@@ -243,7 +243,7 @@ function EditImportListModalContent(props) {
 
                 <FormGroup>
                   <FormLabel>
-                    {translate('ReadarrTags')}
+                    {translate('LidarrTags')}
                   </FormLabel>
 
                   <FormInputGroup
@@ -288,7 +288,7 @@ function EditImportListModalContent(props) {
               kind={kinds.DANGER}
               onPress={onDeleteImportListPress}
             >
-              Delete
+              {translate('Delete')}
             </Button>
         }
 
@@ -297,13 +297,13 @@ function EditImportListModalContent(props) {
           error={saveError}
           onPress={onTestPress}
         >
-          Test
+          {translate('Test')}
         </SpinnerErrorButton>
 
         <Button
           onPress={onModalClose}
         >
-          Cancel
+          {translate('Cancel')}
         </Button>
 
         <SpinnerErrorButton
@@ -311,7 +311,7 @@ function EditImportListModalContent(props) {
           error={saveError}
           onPress={onSavePress}
         >
-          Save
+          {translate('Save')}
         </SpinnerErrorButton>
       </ModalFooter>
     </ModalContent>
