@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Net;
 using FluentValidation.Results;
 using NLog;
-using NzbDrone.Common.EnvironmentInfo;
 using NzbDrone.Common.Http;
 
 namespace NzbDrone.Core.Notifications.Notifiarr
@@ -17,7 +14,6 @@ namespace NzbDrone.Core.Notifications.Notifiarr
 
     public class NotifiarrProxy : INotifiarrProxy
     {
-        private const string URL = "https://notifiarr.com/notifier.php";
         private readonly IHttpClient _httpClient;
         private readonly Logger _logger;
 
@@ -52,10 +48,19 @@ namespace NzbDrone.Core.Notifications.Notifiarr
             }
             catch (HttpException ex)
             {
-                if (ex.Response.StatusCode == HttpStatusCode.Unauthorized)
+                switch ((int)ex.Response.StatusCode)
                 {
-                    _logger.Error(ex, "API key is invalid: " + ex.Message);
-                    return new ValidationFailure("APIKey", "API key is invalid");
+                    case 401:
+                        _logger.Error(ex, "API key is invalid: " + ex.Message);
+                        return new ValidationFailure("APIKey", "API key is invalid");
+                    case 400:
+                    case 520:
+                    case 521:
+                    case 522:
+                    case 523:
+                    case 524:
+                        _logger.Error(ex, "Unable to send test notification: " + ex.Message);
+                        return new ValidationFailure("", "Unable to send test notification");
                 }
 
                 _logger.Error(ex, "Unable to send test message: " + ex.Message);
@@ -72,8 +77,9 @@ namespace NzbDrone.Core.Notifications.Notifiarr
         {
             try
             {
-                var requestBuilder = new HttpRequestBuilder(URL).Post();
-                requestBuilder.AddFormParameter("api", settings.APIKey).Build();
+                var url = settings.Environment == (int)NotifiarrEnvironment.Development ? "https://dev.notifiarr.com" : "https://notifiarr.com";
+                var requestBuilder = new HttpRequestBuilder(url + "/api/v1/notification/lidarr/" + settings.APIKey).Post();
+                requestBuilder.AddFormParameter("instanceName", settings.InstanceName).Build();
 
                 foreach (string key in message.Keys)
                 {
@@ -86,10 +92,19 @@ namespace NzbDrone.Core.Notifications.Notifiarr
             }
             catch (HttpException ex)
             {
-                if (ex.Response.StatusCode == HttpStatusCode.BadRequest)
+                switch ((int)ex.Response.StatusCode)
                 {
-                    _logger.Error(ex, "API key is invalid");
-                    throw;
+                    case 401:
+                        _logger.Error(ex, "API key is invalid");
+                        throw;
+                    case 400:
+                    case 520:
+                    case 521:
+                    case 522:
+                    case 523:
+                    case 524:
+                        _logger.Error(ex, "Unable to send notification");
+                        throw;
                 }
 
                 throw new NotifiarrException("Unable to send notification", ex);
